@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Invoice</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+  <style>
+    body { background: #f9fafb; font-family: 'Inter', sans-serif; }
+    .main-container { max-width: 1200px; margin: auto; padding: 20px; }
+    .form-card { background: white; border-radius: 1rem; box-shadow: 0 6px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .card-header { background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; padding: 20px 25px; font-size: 1.5rem; font-weight: 700; }
+    .form-label { font-weight: 500; color: #374151; margin-bottom: 0.5rem; display: block; }
+    .form-control, .form-select { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; }
+    .form-control:focus, .form-select:focus { border-color: #4f46e5; outline: none; background: #fff; }
+    .table th { background: #eef2ff; color: #4f46e5; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; padding: 10px; }
+    .table td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    .btn { border-radius: 0.5rem; padding: 0.6rem 1.2rem; font-weight: 600; color: white; border: none; cursor: pointer; transition: 0.2s; }
+    .btn-primary { background: #4f46e5; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-success { background: #22c55e; }
+    .btn-success:hover { background: #15803d; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #b91c1c; }
+    #grandTotal { font-size: 1.2rem; font-weight: bold; color: #4f46e5; background: #eef2ff; }
+    .product-col, .remarks-col { width: 200px; min-width: 200px; }
+    
+  </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+<header class="bg-white shadow sticky top-0 z-50">
+  <nav class="max-w-7xl mx-auto px-4">
+    <div class="flex justify-between items-center h-16">
+      <a href="#" class="text-2xl font-bold text-gray-900">SGI Company</a>
+      <div class="space-x-6 hidden md:flex">
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Home</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Invoices</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Clients</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Documents</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Orders</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="flex-grow py-8 px-4">
+  <div class="main-container">
+
+    <div class="form-card">
+      <div class="card-header">
+        <i class="fas fa-file-invoice-dollar"></i> Create Invoice
+      </div>
+
+      <div class="p-6">
+        <form action="<?= base_url('invoice/save') ?>" method="post" id="invoiceForm">
+
+          <!-- Invoice Details -->
+          <h3 class="text-indigo-600 font-semibold mb-4"><i class="fas fa-file-alt"></i> Invoice Details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label class="form-label">Invoice No</label>
+              <input type="text" name="invoice_no" class="form-control" placeholder="INV-001" required>
+            </div>
+            <div>
+              <label class="form-label">Invoice Date</label>
+              <input type="date" name="invoice_date" class="form-control" required>
+            </div>
+            <div>
+              <label class="form-label">Financial Year</label>
+              <input type="text" name="fin_year" class="form-control" placeholder="2025-26" required>
+            </div>
+          </div>
+
+          <!-- Customer Details -->
+          <h3 class="text-indigo-600 font-semibold mb-4"><i class="fas fa-user-tie"></i> Customer Details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label class="form-label">Customer Name</label>
+              <input type="text" name="customer_name" class="form-control" required>
+            </div>
+            <div>
+              <label class="form-label">Mobile No</label>
+              <input type="number" name="mobile_no" class="form-control" required>
+            </div>
+            <div>
+              <label class="form-label">Company Name</label>
+              <input type="text" name="company_name" class="form-control" required>
+            </div>
+          </div>
+
+          <!-- Product Table -->
+          <h3 class="text-indigo-600 font-semibold mb-4"><i class="fas fa-shopping-cart"></i> Product Details</h3>
+          <div class="overflow-x-auto">
+            <table class="table w-full text-sm" id="productTable">
+              <thead>
+                <tr>
+                  <th class="product-col">Product</th>
+                  <th class="remarks-col">Remarks</th>
+                  <th>Amount</th>
+                  <th>Discount</th>
+                  <th>GST %</th>
+                  <th>GST Amt</th>
+                  <th>Final Amt</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="product-col">
+                    <select name="product_name[]" class="form-select" required>
+                      <option value="">-- Select --</option>
+                      <option>Product A</option>
+                      <option>Product B</option>
+                    </select>
+                  </td>
+                  <td class="remarks-col">
+                    <input type="text" name="remarks[]" class="form-control">
+                  </td>
+                  <td><input type="number" name="amount[]" class="form-control" oninput="calculateRow(this)" step="0.01"></td>
+                  <td><input type="number" name="discount[]" class="form-control" oninput="calculateRow(this)" step="0.01"></td>
+                  <td><input type="number" name="gst_percent[]" class="form-control" oninput="calculateRow(this)" value="18"></td>
+                  <td><input type="number" name="gst_amount[]" class="form-control" readonly></td>
+                  <td><input type="number" name="final_amount[]" class="form-control" readonly></td>
+                  <td><button type="button" class="btn btn-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-4">
+            <button type="button" class="btn btn-success" onclick="addRow()"><i class="fas fa-plus-circle"></i> Add Product</button>
+          </div>
+
+          <!-- Totals -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+            <div><label class="form-label">Total Amount</label><input id="totalAmount" class="form-control" readonly></div>
+            <div><label class="form-label">Total Discount</label><input id="totalDiscount" class="form-control" readonly></div>
+            <div><label class="form-label">Total GST</label><input id="totalGST" class="form-control" readonly></div>
+            <div><label class="form-label">Grand Total</label><input id="grandTotal" class="form-control" readonly></div>
+          </div>
+
+          <div class="mt-6 text-center">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Submit Invoice</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-gray-800 text-gray-300 text-center py-4">
+  <p>&copy; <?= date('Y') ?> SGI Company. All rights reserved.</p>
+</footer>
+
+<script>
+function addRow() {
+  const table = document.querySelector('#productTable tbody');
+  const newRow = table.rows[0].cloneNode(true);
+
+  newRow.querySelectorAll('input, select').forEach(el => {
+    if (el.name === "gst_percent[]") {
+      el.value = "18"; // keep GST default
+    } else {
+      el.value = "";
+    }
+  });
+
+  table.appendChild(newRow);
+  updateTotals();
+}
+
+function removeRow(btn) {
+  const row = btn.closest('tr');
+  const table = document.querySelector('#productTable tbody');
+  if (table.rows.length > 1) row.remove();
+  updateTotals();
+}
+
+function calculateRow(el) {
+  const row = el.closest('tr');
+  let amount = parseFloat(row.querySelector('[name="amount[]"]').value) || 0;
+  let discount = parseFloat(row.querySelector('[name="discount[]"]').value) || 0;
+  let gstPercent = parseFloat(row.querySelector('[name="gst_percent[]"]').value) || 0;
+
+  let taxable = amount - discount;
+  let gstAmt = taxable * gstPercent / 100;
+  let finalAmt = taxable + gstAmt;
+
+  row.querySelector('[name="gst_amount[]"]').value = gstAmt.toFixed(2);
+  row.querySelector('[name="final_amount[]"]').value = finalAmt.toFixed(2);
+
+  updateTotals();
+}
+
+function updateTotals() {
+  let totalAmt = 0, totalDisc = 0, totalGST = 0, grandTotal = 0;
+  document.querySelectorAll('#productTable tbody tr').forEach(row => {
+    let amt = parseFloat(row.querySelector('[name="amount[]"]').value) || 0;
+    let disc = parseFloat(row.querySelector('[name="discount[]"]').value) || 0;
+    let gst = parseFloat(row.querySelector('[name="gst_amount[]"]').value) || 0;
+    let final = parseFloat(row.querySelector('[name="final_amount[]"]').value) || 0;
+    totalAmt += (amt - disc);
+    totalDisc += disc;
+    totalGST += gst;
+    grandTotal += final;
+  });
+  document.getElementById('totalAmount').value = totalAmt.toFixed(2);
+  document.getElementById('totalDiscount').value = totalDisc.toFixed(2);
+  document.getElementById('totalGST').value = totalGST.toFixed(2);
+  document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+}
+
+// Auto-fill Invoice Date and Financial Year
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelector('[name="invoice_date"]').value = today;
+
+  const year = new Date().getFullYear();
+  const month = new Date().getMonth();
+  const finYear = month >= 3 ? `${year}-${(year + 1).toString().slice(-2)}` : `${year - 1}-${year.toString().slice(-2)}`;
+  document.querySelector('[name="fin_year"]').value = finYear;
+});
+
+// Prevent submission if no products or grand total = 0
+document.getElementById("invoiceForm").addEventListener("submit", (e) => {
+  if (parseFloat(document.getElementById("grandTotal").value) <= 0) {
+    e.preventDefault();
+    alert("Please add at least one valid product with amount!");
+  }
+});
+</script>
+</body>
+</html>
+>
