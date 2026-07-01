@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Report Table</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- DataTables -->
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+<style>
+body {
+    background-color: #f4f6f9;
+    padding: 20px;
+}
+
+.table-container {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.table th, .table td {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+tfoot input {
+    width: 100%;
+    padding: 4px;
+    font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid">
+    <h3 class="text-center mb-4">Invoice Reports</h3>
+
+    <div class="table-container">
+        <table id="invoiceTable" class="table table-bordered table-striped table-hover" style="width:100%">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Company Name</th>
+                    <th>Invoice No</th>
+                    <th>Product</th>
+                    <th>Grand Total</th>
+                    <th>Invoice Date</th>
+                    <th>Mobile</th>
+                    <th>GST No</th>
+                    <th>PAN/TAN</th>
+                    <th>Total Amt</th>
+                    <th>Paid Amt</th>
+                    <th>Pending Amt</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>View</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+
+
+
+
+
+
+
+
+
+
+
+
+<tbody id="invoiceBody"></tbody>
+
+<script>
+let tbody = document.getElementById("invoiceBody");
+let rows = "";
+
+for (let i = 1; i <= 50; i++) {
+    rows += `
+        <tr>
+            <td>${i}</td>
+            <td>Nexus Tech${i}</td>
+            <td>INV-${i}</td>
+            <td>Laptop${i}</td>
+            <td>5200</td>
+            <td>2024-01-10</td>
+            <td>9876543210</td>
+            <td>29AAAAA0000A1Z5</td>
+            <td>ABCDE1234F</td>
+            <td>5200</td>
+            <td>5200</td>
+            <td>0</td>
+            <td><span class="badge bg-success">Paid</span></td>
+            <td>2024-01-10</td>
+            <td>2024-01-11</td>
+            <td><button class="btn btn-sm btn-primary">View</button></td>
+            <td><button class="btn btn-sm btn-success">Edit</button></td>
+            <td><button class="btn btn-sm btn-danger">Delete</button></td>
+        </tr>
+    `;
+}
+
+tbody.innerHTML = rows;
+</script>
+
+
+
+
+<!--
+            <tbody>
+            
+                <tr>
+                    <td>1</td>
+                    <td>Nexus Tech</td>
+                    <td>INV-001</td>
+                    <td>Laptop</td>
+                    <td>5200</td>
+                    <td>2024-01-10</td>
+                    <td>9876543210</td>
+                    <td>29AAAAA0000A1Z5</td>
+                    <td>ABCDE1234F</td>
+                    <td>5200</td>
+                    <td>5200</td>
+                    <td>0</td>
+                    <td><span class="badge bg-success">Paid</span></td>
+                    <td>2024-01-10</td>
+                    <td>2024-01-11</td>
+                    <td><button class="btn btn-sm btn-primary">View</button></td>
+                    <td><button class="btn btn-sm btn-success">Edit</button></td>
+                    <td><button class="btn btn-sm btn-danger">Delete</button></td>
+                </tr>
+
+                <tr>
+                    <td>2</td>
+                    <td>Green Agro</td>
+                    <td>INV-002</td>
+                    <td>Fertilizer</td>
+                    <td>1500</td>
+                    <td>2024-01-12</td>
+                    <td>9876543211</td>
+                    <td>29BBBBB1111B1Z5</td>
+                    <td>FGHIJ5678K</td>
+                    <td>1500</td>
+                    <td>500</td>
+                    <td>1000</td>
+                    <td><span class="badge bg-warning text-dark">Partial</span></td>
+                    <td>2024-01-12</td>
+                    <td>2024-01-12</td>
+                    <td><button class="btn btn-sm btn-primary">View</button></td>
+                    <td><button class="btn btn-sm btn-success">Edit</button></td>
+                    <td><button class="btn btn-sm btn-danger">Delete</button></td>
+                </tr>
+               
+            </tbody>
+ -->
+            <tfoot>
+                <tr>
+                    <th>ID</th>
+                    <th>Company Name</th>
+                    <th>Invoice No</th>
+                    <th>Product</th>
+                    <th>Grand Total</th>
+                    <th>Invoice Date</th>
+                    <th>Mobile</th>
+                    <th>GST No</th>
+                    <th>PAN/TAN</th>
+                    <th>Total Amt</th>
+                    <th>Paid Amt</th>
+                    <th>Pending Amt</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function () {
+
+    // Add footer search inputs
+    $('#invoiceTable tfoot th').each(function (index) {
+        if (index < 15) {
+            $(this).html('<input type="text" placeholder="Search" class="form-control form-control-sm" />');
+        }
+    });
+
+    var table = $('#invoiceTable').DataTable({
+        scrollX: true,      // Horizontal scroll
+        pageLength: 10,
+        lengthMenu: [10, 25, 50],
+        ordering: true,
+        columnDefs: [
+            { orderable: false, searchable: false, targets: [15,16,17] }
+        ]
+    });
+
+    // Column search
+    table.columns().every(function (index) {
+        if (index < 15) {
+            var that = this;
+            $('input', this.footer()).on('keyup change clear', function () {
+                if (that.search() !== this.value) {
+                    that.search(this.value).draw();
+                }
+            });
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>

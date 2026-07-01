@@ -11,7 +11,9 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    
+  <!--  Bootstrap start for table filter -->
+<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"> -->
+<!-- Bootstrap end for table filter-->
 
     <!-- Your Existing Styles -->
     <style>
@@ -191,6 +193,27 @@
         }
         
         .no-caret::after { display: none !important; }
+
+/*--------------------*/
+
+.table-responsive-container {
+            background: white;
+            padding: 1px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .table thead th {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .table tbody td {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+main {
+    margin-top: 80px;
+}
+
     </style>
 </head>
 <body>
@@ -524,67 +547,420 @@
 <!-- ================= HEADER END ================= -->
 
 
-<!-- ================= MAIN START ================= -->
-<main style="padding-top: 90px;">
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-xl-8 col-lg-10 text-center">
+<main >
 
-                    <span class="badge rounded-pill bg-light text-primary px-3 py-2 mb-4 border">
-                        100% Secure & Private
-                    </span>
+<div class="container-fluid">
+  <!--  <h2 class="mb-4 text-center">Invoice Reports</h2> -->
+   
+   <h3 class="text-center">Invoice Reports  </h3>
 
-                    <h1 class="display-3 fw-bold mb-4">
-                        The ultimate solution for <span class="text-primary">PDF workflows.</span>
-                    </h1>
+    
 
-                    <p class="lead text-muted mb-5 fs-4">
-                        Merge, split, compress, and convert PDFs with just a few clicks.
-                    </p>
+ 
+  
+    <div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <input type="text" id="filterCompany" class="form-control" placeholder="Search Company Name">
+    </div>
 
-                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                        <button class="btn btn-primary btn-lg px-5 py-3 rounded-4 shadow">
-                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>Select Files
-                        </button>
-                        <button class="btn btn-outline-dark btn-lg px-5 py-3 rounded-4">
-                            Explore Tools
-                        </button>
-                    </div>
+    <div class="col-md-2">
+        <input type="text" id="filterInvoice" class="form-control" placeholder="Invoice No">
+    </div>
 
-                </div>
-            </div>
-        </div>
-    </section>
+    <div class="col-md-2">
+        <select id="filterStatus" class="form-select">
+            <option value="">Payment Status</option>
+            <option value="Paid">Paid</option>
+            <option value="Partial">Partial</option>
+            <option value="Unpaid">Unpaid</option>
+        </select>
+    </div>
 
-    <!-- Future Content -->
-    <!-- <section>...</section> -->
+    <div class="col-md-2">
+        <input type="date" id="fromDate" class="form-control">
+    </div>
 
-</main>
-<!-- ================= MAIN END ================= -->
+    <div class="col-md-2">
+        <input type="date" id="toDate" class="form-control">
+    </div>
+
+    <div class="col-md-1 d-grid">
+        <button class="btn btn-secondary" id="resetFilter">Reset</button>
+    </div>
+</div>
 
 
-<!-- ================= FOOTER START ================= -->
-<footer class="bg-white border-top mt-5">
-    <div class="container py-4">
-        <div class="row text-center text-md-start">
-            <div class="col-md-6 mb-3 mb-md-0">
-                <strong>© 2025 SGI Company</strong>
-                <p class="text-muted small mb-0">All rights reserved.</p>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <a href="#" class="text-muted me-3">Privacy</a>
-                <a href="#" class="text-muted me-3">Terms</a>
-                <a href="#" class="text-muted">Support</a>
-            </div>
+    <div class="table-responsive-container">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm table-bordered table-striped" id="example" style="width:100%">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Id</th>
+                        <th>Company Name</th>
+                        <th>Invoice No</th>
+                        <th>Product Name</th>
+                        <th>Grand Total</th>
+                        <th>Invoice Date</th>                       
+                        <th>Mobile No</th>
+                        <th>GST No</th>
+                        <th>PAN/TAN</th>
+                        <th>Total Amt</th>
+                        <th>Paid Amt</th>
+                        <th>Pending Amt</th>   
+                        <th>Payment Status</th>                       
+                        <th>Created Date</th>
+                        <th>Updated Date</th>
+                        <th colspan="3">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Nexus Tech Solutions</td>
+                        <td>INV-2024-001</td>
+                        <td>Laptops & Monitors</td>
+                        <td>$5,200.00</td>
+                        <td>2024-01-10</td>
+                        <td>+1 555-0101</td>
+                        <td>29AAAAA0000A1Z5</td>
+                        <td>ABCDE1234F</td>
+                        <td>$5,200.00</td>
+                        <td>$5,200.00</td>
+                        <td>$0.00</td>
+                        <td><span class="badge bg-success">Paid</span></td>
+                        <td>2024-01-10</td>
+                        <td>2024-01-11</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Green Valley Agro</td>
+                        <td>INV-2024-002</td>
+                        <td>Organic Fertilizers</td>
+                        <td>$1,500.00</td>
+                        <td>2024-01-12</td>
+                        <td>+1 555-0102</td>
+                        <td>29BBBBB1111B1Z5</td>
+                        <td>FGHIJ5678K</td>
+                        <td>$1,500.00</td>
+                        <td>$500.00</td>
+                        <td>$1,000.00</td>
+                        <td><span class="badge bg-warning text-dark">Partial</span></td>
+                        <td>2024-01-12</td>
+                        <td>2024-01-12</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Skyline Architecture</td>
+                        <td>INV-2024-003</td>
+                        <td>Design Software</td>
+                        <td>$3,800.00</td>
+                        <td>2024-01-15</td>
+                        <td>+1 555-0103</td>
+                        <td>29CCCCC2222C1Z5</td>
+                        <td>KLMNO9012P</td>
+                        <td>$3,800.00</td>
+                        <td>$0.00</td>
+                        <td>$3,800.00</td>
+                        <td><span class="badge bg-danger">Unpaid</span></td>
+                        <td>2024-01-15</td>
+                        <td>2024-01-15</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Urban Prime Retail</td>
+                        <td>INV-2024-004</td>
+                        <td>Office Supplies</td>
+                        <td>$950.00</td>
+                        <td>2024-01-18</td>
+                        <td>+1 555-0104</td>
+                        <td>29DDDDD3333D1Z5</td>
+                        <td>QRSTU3456V</td>
+                        <td>$950.00</td>
+                        <td>$950.00</td>
+                        <td>$0.00</td>
+                        <td><span class="badge bg-success">Paid</span></td>
+                        <td>2024-01-18</td>
+                        <td>2024-01-19</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Blue Wave Logistics</td>
+                        <td>INV-2024-005</td>
+                        <td>Freight Services</td>
+                        <td>$12,400.00</td>
+                        <td>2024-01-20</td>
+                        <td>+1 555-0105</td>
+                        <td>29EEEEE4444E1Z5</td>
+                        <td>WXYZA7890B</td>
+                        <td>$12,400.00</td>
+                        <td>$6,000.00</td>
+                        <td>$6,400.00</td>
+                        <td><span class="badge bg-warning text-dark">Partial</span></td>
+                        <td>2024-01-20</td>
+                        <td>2024-01-21</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>Apex Manufacturing</td>
+                        <td>INV-2024-006</td>
+                        <td>Raw Materials</td>
+                        <td>$7,250.00</td>
+                        <td>2024-01-22</td>
+                        <td>+1 555-0106</td>
+                        <td>29FFFFF5555F1Z5</td>
+                        <td>BCDEF4321G</td>
+                        <td>$7,250.00</td>
+                        <td>$7,250.00</td>
+                        <td>$0.00</td>
+                        <td><span class="badge bg-success">Paid</span></td>
+                        <td>2024-01-22</td>
+                        <td>2024-01-22</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>Creative Pulse Media</td>
+                        <td>INV-2024-007</td>
+                        <td>Ad Campaigns</td>
+                        <td>$2,100.00</td>
+                        <td>2024-01-25</td>
+                        <td>+1 555-0107</td>
+                        <td>29GGGGG6666G1Z5</td>
+                        <td>HIJKL8765M</td>
+                        <td>$2,100.00</td>
+                        <td>$2,100.00</td>
+                        <td>$0.00</td>
+                        <td><span class="badge bg-success">Paid</span></td>
+                        <td>2024-01-25</td>
+                        <td>2024-01-25</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td>Stellar Hospitality</td>
+                        <td>INV-2024-008</td>
+                        <td>Kitchen Equipment</td>
+                        <td>$4,600.00</td>
+                        <td>2024-01-27</td>
+                        <td>+1 555-0108</td>
+                        <td>29HHHHH7777H1Z5</td>
+                        <td>NOPQR2109S</td>
+                        <td>$4,600.00</td>
+                        <td>$0.00</td>
+                        <td>$4,600.00</td>
+                        <td><span class="badge bg-danger">Unpaid</span></td>
+                        <td>2024-01-27</td>
+                        <td>2024-01-27</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>9</td>
+                        <td>Summit Healthcare</td>
+                        <td>INV-2024-009</td>
+                        <td>Medical Supplies</td>
+                        <td>$8,900.00</td>
+                        <td>2024-01-28</td>
+                        <td>+1 555-0109</td>
+                        <td>29IIIII8888I1Z5</td>
+                        <td>TUVWX6543Y</td>
+                        <td>$8,900.00</td>
+                        <td>$8,900.00</td>
+                        <td>$0.00</td>
+                        <td><span class="badge bg-success">Paid</span></td>
+                        <td>2024-01-28</td>
+                        <td>2024-01-28</td>
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td>Titan Security Corp</td>
+                        <td>INV-2024-010</td>
+                        <td>CCTV Installation</td>
+                        <td>$3,150.00</td>
+                        <td>2024-01-30</td>
+                        <td>+1 555-0110</td>
+                        <td>29JJJJJ9999J1Z5</td>
+                        <td>ZABCD0987E</td>
+                        <td>$3,150.00</td>
+                        <td>$1,500.00</td>
+                        <td>$1,650.00</td>
+                        <td><span class="badge bg-warning text-dark">Partial</span></td>
+                        <td>2024-01-30</td>
+                        <td>2024-01-30</td>
+                      
+                        <td><button class="btn btn-outline-primary btn-sm">View</button></td>
+<td><button class="btn btn-outline-success btn-sm">Edit</button></td>
+<td><button class="btn btn-outline-danger btn-sm">Delete</button></td>
+                        
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</footer>
-<!-- ================= FOOTER END ================= -->
+</div>
 
-<!-- Bootstrap JS -->
+
+
+<!--Start Code-->
+ 
+   <div class="d-flex justify-content-center gap-2 my-3">
+    <button class="btn btn-warning" id="exportExcel">
+        <i class="bi bi-file-earmark-excel me-1"></i> Excel Download
+    </button>
+    <button class="btn btn-info" id="exportPDF">
+        <i class="bi bi-file-earmark-pdf me-1"></i> PDF Download
+    </button>
+</div>
+
+
+    
+
+<!--End Code-->
+
+<script>
+const rows = document.querySelectorAll("#example tbody tr");
+
+function filterTable() {
+    const company = document.getElementById("filterCompany").value.toLowerCase();
+    const invoice = document.getElementById("filterInvoice").value.toLowerCase();
+    const status = document.getElementById("filterStatus").value.toLowerCase();
+    const fromDate = document.getElementById("fromDate").value;
+    const toDate = document.getElementById("toDate").value;
+
+    rows.forEach(row => {
+        const companyText = row.cells[1].innerText.toLowerCase();
+        const invoiceText = row.cells[2].innerText.toLowerCase();
+        const statusText = row.cells[12].innerText.toLowerCase();
+        const invoiceDate = row.cells[5].innerText;
+
+        let show = true;
+
+        if (company && !companyText.includes(company)) show = false;
+        if (invoice && !invoiceText.includes(invoice)) show = false;
+        if (status && !statusText.includes(status)) show = false;
+
+        if (fromDate && invoiceDate < fromDate) show = false;
+        if (toDate && invoiceDate > toDate) show = false;
+
+        row.style.display = show ? "" : "none";
+    });
+}
+
+document.querySelectorAll(
+    "#filterCompany, #filterInvoice, #filterStatus, #fromDate, #toDate"
+).forEach(el => el.addEventListener("input", filterTable));
+
+document.getElementById("resetFilter").addEventListener("click", () => {
+    document.querySelectorAll("input, select").forEach(el => el.value = "");
+    rows.forEach(row => row.style.display = "");
+});
+</script>
+
+</main>
+
+
+
+
+
+
+
+
+<footer>
+    <p>footer page</p>
+<!-- Bootstrap 5 Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+</footer>
+
+
+<script>
+/* ================= EXCEL EXPORT ================= */
+document.getElementById("exportExcel").addEventListener("click", function () {
+    const table = document.getElementById("example");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Invoice Reports" });
+    XLSX.writeFile(wb, "invoice_reports.xlsx");
+});
+
+/* ================= PDF EXPORT ================= */
+document.getElementById("exportPDF").addEventListener("click", function () {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF("l", "pt", "a4");
+
+    doc.text("Invoice Reports", 40, 40);
+
+    doc.autoTable({
+        html: "#example",
+        startY: 60,
+        theme: "grid",
+        styles: {
+            fontSize: 7,
+            cellPadding: 3
+        },
+        headStyles: {
+            fillColor: [33, 37, 41]
+        }
+    });
+
+    doc.save("invoice_reports.pdf");
+});
+</script>
+
+
+<!-- SheetJS (Excel) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- jsPDF (PDF) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<!--////////-->
+<!-- Optional JavaScript -->
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+
+<!-- DataTables -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    $('#example').DataTable({
+        pageLength: 15,          // default records per page
+        lengthMenu: [10, 15, 25, 50],
+        searching: true,         // search box
+        ordering: true,          // sorting
+        paging: true,            // pagination
+        info: true               // showing entries info
+    });
+});
+</script>
+
+<!--///////-->
 
 </body>
 </html>

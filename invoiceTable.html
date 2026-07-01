@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGI Company - Professional Invoice Management</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <style>
+        :root {
+            --brand-color: #6366f1;
+            --brand-hover: #4f46e5;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --bg-light: #f3f4f6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+        }
+
+        /* ===== NAVIGATION & MEGA MENU ===== */
+        .navbar {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--brand-color) !important;
+        }
+
+        @media (min-width: 992px) {
+            .navbar .nav-item.dropdown { position: static; }
+            .navbar .dropdown-menu.mega-menu {
+                width: 100%;
+                left: 0;
+                right: 0;
+                top: 100%;
+                border: none;
+                border-radius: 0 0 1rem 1rem;
+                box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+                display: block;
+                visibility: hidden;
+                opacity: 0;
+                transform: translateY(10px);
+                transition: 0.25s ease;
+            }
+            .navbar .dropdown:hover .dropdown-menu.mega-menu {
+                visibility: visible;
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mega-menu-column { padding: 1.5rem; }
+        .mega-menu h6 {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .menu-link:hover { background: #f3f4f6; color: var(--brand-color); }
+        .menu-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 12px; color: white; flex-shrink: 0;
+        }
+
+        /* ICON COLORS */
+        .bg-red { background: #ef4444; }
+        .bg-green { background: #10b981; }
+        .bg-blue { background: #3b82f6; }
+        .bg-purple { background: #8b5cf6; }
+        .bg-pink { background: #ec4899; }
+
+        /* ===== TABLE STYLES ===== */
+        main { margin-top: 100px; padding-bottom: 50px; }
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+
+        .table-responsive { border-radius: 8px; overflow: hidden; }
+        .table thead { background-color: #1f2937; color: white; }
+        .table th { font-weight: 600; font-size: 0.85rem; border: none; }
+        .table td { vertical-align: middle; font-size: 0.85rem; white-space: nowrap; }
+
+        .btn-action { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+        
+        /* Custom Scrollbar for Table */
+        .table-responsive::-webkit-scrollbar { height: 8px; }
+        .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+
+
+        /* Ticker Styles */
+.status-ticker {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    height: 40px;
+    position: fixed;
+    top: 72px; /* Positioned right below your navbar */
+    width: 100%;
+    z-index: 999;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.ticker-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+
+.ticker-content {
+    display: inline-block;
+    white-space: nowrap;
+    padding-left: 100%;
+    animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-content:hover {
+    animation-play-state: paused;
+}
+
+.ticker-item {
+    display: inline-block;
+    padding: 0 40px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+@keyframes ticker-scroll {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* Adjust Main Margin since ticker is fixed */
+main {
+    margin-top: 130px !important;
+}
+
+/* Mobile Ticker Adjustment */
+@media (max-width: 991px) {
+    .status-ticker { top: 62px; }
+    main { margin-top: 120px !important; }
+}
+
+/*scrolling code*/
+
+
+.table-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    border-radius: 8px;
+}
+
+/* Sticky header */
+.table-scroll thead th {
+    position: sticky;
+    top: 0;
+    background-color: #1f2937; /* match header color */
+    color: #fff;
+    z-index: 100;
+}
+
+/* Smooth scrollbar */
+.table-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+.table-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+
+
+
+    </style>
+
+
+
+
+
+
+
+
+</head>
+<body>
+
+<header>
+    <nav class="navbar navbar-expand-lg fixed-top py-3">
+        <div class="container-fluid px-lg-5">
+            <a class="navbar-brand" href="#"><i class="bi bi-rocket-takeoff-fill me-2"></i>SGI COMPANY</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item"><a class="nav-link px-3 fw-medium" href="#">Dashboard</a></li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-medium px-3" href="#" role="button" data-bs-toggle="dropdown">Invoice</a>
+                        <div class="dropdown-menu mega-menu p-0">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-lg-3 mega-menu-column border-end">
+                                        <h6>Forms</h6>
+                                        <a href="#" class="menu-link mb-2">
+                                            <div class="menu-icon bg-red"><i class="bi bi-plus-circle"></i></div>
+                                            <span>Create Invoice</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-lg-3 mega-menu-column border-end">
+                                        <h6>Management</h6>
+                                        <a href="#" class="menu-link mb-2">
+                                            <div class="menu-icon bg-green"><i class="bi bi-file-earmark-text"></i></div>
+                                            <span>Invoice Reports</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-lg-3 mega-menu-column border-end">
+                                        <h6>Payments</h6>
+                                        <a href="#" class="menu-link mb-2">
+                                            <div class="menu-icon bg-blue"><i class="bi bi-cash-stack"></i></div>
+                                            <span>Pending Payments</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-lg-3 mega-menu-column bg-light">
+                                        <h6>Quick Export</h6>
+                                        <p class="small text-muted">Generate monthly summaries in one click.</p>
+                                        <button class="btn btn-sm btn-outline-primary w-100">View Guide</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-item"><a class="nav-link px-3 fw-medium" href="#">Master</a></li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted d-none d-xl-inline small">Welcome back, <strong>Sandeep</strong></span>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle d-flex align-items-center text-decoration-none" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name=Sandeep+Rajbhar&background=6366f1&color=fff" class="rounded-circle border" width="38" height="38">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main class="container-fluid">
+    
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0 fw-bold">Invoice Analytics Report</h4>
+            <div class="d-flex gap-2">
+                <button class="btn btn-warning btn-sm shadow-sm" id="exportExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                </button>
+                <button class="btn btn-danger btn-sm shadow-sm" id="exportPDF">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-4 p-3 bg-light rounded-3">
+            <div class="col-md-3">
+                <label class="small fw-bold text-muted">Company Search</label>
+                <input type="text" id="filterCompany" class="form-control form-control-sm" placeholder="Search customer...">
+            </div>
+            <div class="col-md-2">
+                <label class="small fw-bold text-muted">Invoice #</label>
+                <input type="text" id="filterInvoice" class="form-control form-control-sm" placeholder="INV-000">
+            </div>
+            <div class="col-md-2">
+                <label class="small fw-bold text-muted">Status</label>
+                <select id="filterStatus" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Unpaid">Unpaid</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted">Date Range</label>
+                <div class="input-group input-group-sm">
+                    <input type="date" id="fromDate" class="form-control">
+                    <span class="input-group-text">to</span>
+                    <input type="date" id="toDate" class="form-control">
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-secondary btn-sm w-100" id="resetFilter">Reset</button>
+            </div>
+        </div>
+
+        <div class="table-responsive table-scroll">
+            <table class="table table-hover" id="example">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Company Name</th>
+                        <th>Invoice No</th>
+                        <th>Grand Total</th>
+                        <th>Invoice Date</th>
+
+                        <th>Mobile No</th>
+                        <th>Aadhar No</th>
+                        <th>Pan Card No</th>
+                        <th>Total Amt</th>
+                       
+
+
+                        <th>Paid Amt</th>
+                        <th>Status</th>
+
+                        
+
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td><strong>Nexus Tech Solutions</strong></td>
+                        <td>INV-2024-001</td>
+                        <td>$5,200.00</td>
+                        <td>2024-01-10</td>
+
+                         <td>8574134533</td>
+                        <td>gf5g4f5gf5g4f</td>
+                        <td>f54gdf5</td>
+                        <td>$5,200.00</td>
+
+                        <td>$5,200.00</td>
+
+
+                        <td><span class="badge bg-success-subtle text-success border border-success">Paid</span></td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <button class="btn btn-outline-primary btn-action"><i class="bi bi-eye"></i></button>
+                                <button class="btn btn-outline-success btn-action"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-outline-danger btn-action"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+
+                     <tr>
+                        <td>2</td>
+                        <td><strong>Nexus Tech Solutions</strong></td>
+                        <td>INV-2024-002</td>
+                        <td>$5,300.00</td>
+                        <td>2026-02-10</td>
+                        <td>8574134533</td>
+                        <td>gf5g4f5gf5g4f</td>
+                        <td>f54gdf5</td>
+                        <td>$5,200.00</td>
+                        <td>$5,300.00</td>
+                        <td><span class="badge bg-success-subtle text-success border border-success">Paid</span></td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <button class="btn btn-outline-primary btn-action"><i class="bi bi-eye"></i></button>
+                                <button class="btn btn-outline-success btn-action"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-outline-danger btn-action"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    </tbody>
+            </table>
+        </div>
+    
+</main>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+
+<script>
+$(document).ready(function () {
+
+    const table = $('#example').DataTable({
+        scrollY: "420px",          // ✅ vertical scrolling
+        scrollCollapse: true,
+        paging: false,             // ❌ disable pagination
+        info: false,
+        searching: false,          // custom filters used
+        ordering: true,
+        dom: 'rt',                 // clean UI
+    });
+
+    // Custom Filters
+    function applyFilters() {
+        table
+            .column(1).search($('#filterCompany').val())
+            .column(2).search($('#filterInvoice').val())
+            .column(10).search($('#filterStatus').val())
+            .draw();
+    }
+
+    $('#filterCompany, #filterInvoice, #filterStatus').on('keyup change', applyFilters);
+
+    $('#resetFilter').click(function () {
+        $('input, select').val('');
+        table.search('').columns().search('').draw();
+    });
+
+    // Excel Export
+    $('#exportExcel').click(function () {
+        const wb = XLSX.utils.table_to_book(document.getElementById("example"), { sheet: "Invoices" });
+        XLSX.writeFile(wb, "Invoice_Report.xlsx");
+    });
+
+    // PDF Export
+    $('#exportPDF').click(function () {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("p", "pt", "a4");
+        doc.text("SGI Company - Invoice Report", 40, 40);
+        doc.autoTable({ html: "#example", startY: 60 });
+        doc.save("Invoice_Report.pdf");
+    });
+
+});
+</script>
+
+
+
+
+
+</body>
+</html>
