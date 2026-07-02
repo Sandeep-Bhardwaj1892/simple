@@ -1,0 +1,17 @@
+SELECT
+		 "PMS"."Pack Mtrl Name",
+		 MAX("PMBS"."Rate Per Qnty") AS "Rate",
+		 SUM("PMS"."Opening Qnty") AS "Total Opening",
+		 SUM("PMS"."Opening Qnty" * "PMBS"."Rate Per Qnty") AS "OPValue",
+		 SUM("PMS"."Inward Bags") AS "Total Inward",
+		 SUM("PMS"."Inward Bags" * "PMBS"."Rate Per Qnty") AS "INValue",
+		 SUM("PMS"."Outward Bags") AS "Total Outward",
+		 SUM("PMS"."Outward Bags" * "PMBS"."Rate Per Qnty") AS "OUTValue",
+		 SUM("PMS"."Opening Qnty" + "PMS"."Inward Bags" -"PMS"."Outward Bags") AS "Balance",
+		 SUM(("PMS"."Opening Qnty" + "PMS"."Inward Bags" -"PMS"."Outward Bags") * "PMBS"."Rate Per Qnty") AS "BalValue"
+FROM  "PM Stock" AS  "PMS"
+LEFT JOIN "PM Balance Sheet" AS  "PMBS" ON "PMS"."Pack Mtrl Name"  = "PMBS"."Pack Mtrl Name"  
+WHERE	 "PMS"."Status"  = 'Active'
+ AND	"PMBS"."Rate Per Qnty"  > 0
+GROUP BY  "PMS"."Pack Mtrl Name" 
+ORDER BY "PMS"."Pack Mtrl Name" ASC 
