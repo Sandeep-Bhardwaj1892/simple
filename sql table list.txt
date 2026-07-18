@@ -1,0 +1,17 @@
+, 
+invData AS (
+    SELECT
+        "Parent Firm",
+        "Customers Name",
+        "CO No",
+        "Product Code",
+        "Pack Mtrl Name",
+        "Pack Mtrl Printing Name",
+        "Vehicle Number",
+        "Loading Slip Ref No",
+        "Invoice Number", 
+        "Added Time",
+       
+        ROW_NUMBER() OVER(PARTITION BY "CO No" ORDER BY "Added Time" DESC) as rnInv
+    FROM "Invoice Breakup"
+)

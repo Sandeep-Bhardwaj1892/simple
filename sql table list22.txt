@@ -1,0 +1,53 @@
+/* Combine both CTEs with a single WITH clause */
+WITH OTPData AS (
+    SELECT
+        "Pack Mtrl Name",
+        "ID",
+        "CO Prod ID",
+        "Status",
+         "OTP NO",
+        "Finance Approval",
+        "Production Approval",
+        "PM Incharge Approval",
+        "Sales  Status for Stock",
+        "Sales  Status for PM",
+        ROW_NUMBER() OVER(PARTITION BY "CO Prod ID" ORDER BY "Added Time" DESC) as rn
+    FROM "OTP Breakup"
+), 
+LSData AS (
+    SELECT
+        "Vehicle Number",
+        "ID",
+        "CO No",
+        "OTP No",
+        "Entry Status",
+        "Added Time",
+        ROW_NUMBER() OVER(PARTITION BY "CO No" ORDER BY "Added Time" DESC) as rnLS
+    FROM "Loading Slip Breakup"
+)
+
+/* Main Select Statement */
+SELECT
+    "COP"."Added Time",
+    "COP"."Pack Mtrl Name",
+    "COP"."ID",
+    "OTPB"."CO Prod ID",
+    "LSB"."Vehicle Number",
+    "LSB"."Entry Status",
+    "COP"."Status",
+    "OTPB"."Status",
+    "OTPB"."Finance Approval",
+    "OTPB"."Production Approval",
+    "OTPB"."PM Incharge Approval",
+    "OTPB"."Sales  Status for Stock",
+    "OTPB"."Sales  Status for PM",
+    "OTPB"."OTP NO",
+    "COP"."CO NO"
+FROM "CO Prod" AS "COP"
+LEFT JOIN OTPData AS "OTPB" 
+    ON "COP"."ID" = "OTPB"."CO Prod ID"
+    AND "OTPB"."rn" = 1  
+LEFT JOIN LSData AS "LSB" 
+    ON "COP"."CO NO" = "LSB"."CO No" AND "OTPB"."OTP NO" = "LSB"."OTP No"
+    AND "LSB"."rnLS" = 1  
+ORDER BY "COP"."Added Time" DESC

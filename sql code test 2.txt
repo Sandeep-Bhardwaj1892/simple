@@ -1,0 +1,86 @@
+/*==========================
+  CTE : OTP Data
+==========================*/
+WITH OTPData AS (SELECT
+		 "CO Prod ID",
+		 "Status",
+		 "OTP NO",
+		 SUM("Qntls") OVER(PARTITION BY "CO Prod ID"  ) AS "Total OTP Qty",
+		 "Finance Approval",
+		 "Production Approval",
+		 "PM Incharge Approval",
+		 "Sales  Status for Stock",
+		 "Sales  Status for PM",
+		 ROW_NUMBER() OVER(PARTITION BY "CO Prod ID"  ORDER BY "Added Time" DESC ) AS rn
+FROM  "OTP Breakup") ,
+/*==========================
+  CTE : Loading Slip Data
+==========================*/ LSData AS (SELECT
+		 "Vehicle Number",
+		 "ID",
+		 "CO No",
+		 "OTP No",
+		 "Product Code",
+		 "Pack Mtrl Name",
+		 "Pack Mtrl Printing Name",
+		 SUM("Quantity To Load") OVER(PARTITION BY "CO No" , "OTP No" , "Product Code" , "Pack Mtrl Name" , "Pack Mtrl Printing Name"  ) AS "Total LS Qty",
+		 "LS Ref No",
+		 "Entry Status",
+		 "Added Time",
+		 ROW_NUMBER() OVER(PARTITION BY "CO No" , "OTP No" , "Product Code" , "Pack Mtrl Name" , "Pack Mtrl Printing Name"  ORDER BY "Added Time" DESC ) AS rnLS
+FROM  "Loading Slip Breakup") ,
+/*==========================
+  CTE : Invoice Data
+==========================*/ invData AS (SELECT
+		 "Parent Firm",
+		 "Customers Name",
+		 "CO No",
+		 "Invoice Quantity",
+		 "Product Code",
+		 "Pack Mtrl Name",
+		 "Pack Mtrl Printing Name",
+		 "Vehicle Number",
+		 "Loading Slip Ref No",
+		 "Invoice Number",
+		 "Added Time",
+		 SUM("Invoice Quantity") OVER(PARTITION BY "CO No" , "Product Code" , "Pack Mtrl Name" , "Pack Mtrl Printing Name"  ) AS "Total Invoice Qty",
+		 ROW_NUMBER() OVER(PARTITION BY "CO No" , "Product Code" , "Pack Mtrl Name" , "Pack Mtrl Printing Name"  ORDER BY "Added Time" DESC ) AS rnInv
+FROM  "Invoice Breakup")
+/*==========================
+  Main Query
+==========================*/
+SELECT
+		 "COP"."CO NO",
+		 "COP"."Product Code Name",
+		 "COP"."Pack Mtrl Name",
+		 "COP"."Pack Mtrl Printing Name",
+		 "COP"."Pack Size",
+		 "COP"."Parent Firm",
+		 "COP"."Name of the Customer",
+		 "COP"."CO Qntls",
+		 /* OTP */ IFNULL("OTPB"."OTP NO", 'Pending') AS "OTP Ref No",
+		 IFNULL("OTPB"."Total OTP Qty", 0) AS "OTP Qty",
+		 /* Loading Slip */ IFNULL("LSB"."LS Ref No", 'Pending') AS "LS Ref No",
+		 IFNULL("LSB"."Vehicle Number", 'NA') AS "Vehicle No",
+		 IFNULL("LSB"."Total LS Qty", 0) AS "LS Qty",
+		 /* Invoice */ IFNULL("INVB"."Invoice Number", 'Pending') AS "Invoice Number",
+		 IFNULL("INVB"."Total Invoice Qty", 0) AS "Invoice Qty",
+		 "COP"."Status",
+		 "COP"."ID",
+		 "COP"."Added Time"
+FROM  "CO Prod" AS  "COP"
+LEFT JOIN OTPData AS  "OTPB" ON "COP"."ID"  = "OTPB"."CO Prod ID"
+	 AND	"OTPB".rn  = 1 
+LEFT JOIN LSData AS  "LSB" ON "COP"."CO NO"  = "LSB"."CO No"
+	 AND	"OTPB"."OTP NO"  = "LSB"."OTP No"
+	 AND	"COP"."Product Code Name"  = "LSB"."Product Code"
+	 AND	"COP"."Pack Mtrl Name"  = "LSB"."Pack Mtrl Name"
+	 AND	"COP"."Pack Mtrl Printing Name"  = "LSB"."Pack Mtrl Printing Name"
+	 AND	"LSB".rnLS  = 1 
+LEFT JOIN invData AS  "INVB" ON "COP"."CO NO"  = "INVB"."CO No"
+	 AND	"COP"."Product Code Name"  = "INVB"."Product Code"
+	 AND	"COP"."Pack Mtrl Name"  = "INVB"."Pack Mtrl Name"
+	 AND	"COP"."Pack Mtrl Printing Name"  = "INVB"."Pack Mtrl Printing Name"
+	 AND	"INVB".rnInv  = 1  
+ORDER BY "COP"."Added Time" DESC 
+ 

@@ -1,0 +1,79 @@
+/* Combine both CTEs with a single WITH clause */
+WITH OTPData AS (SELECT
+		 "Pack Mtrl Name",
+		 "ID",
+		 "CO Prod ID",
+		 "Status",
+		 "OTP NO",
+		 "Qntls",
+		 "Finance Approval",
+		 "Production Approval",
+		 "PM Incharge Approval",
+		 "Sales  Status for Stock",
+		 "Sales  Status for PM",
+		 ROW_NUMBER() OVER(PARTITION BY "CO Prod ID"  ORDER BY "Added Time" DESC ) as rn
+FROM  "OTP Breakup") ,
+LSData AS (SELECT
+		 "Vehicle Number",
+		 "ID",
+		 "CO No",
+		 "Quantity To Load",
+		 "OTP No",
+		 "LS Ref No",
+		 "Entry Status",
+		 "Added Time",
+		 ROW_NUMBER() OVER(PARTITION BY "CO No"  ORDER BY "Added Time" DESC ) as rnLS
+FROM  "Loading Slip Breakup") ,
+invData AS (SELECT
+		 "Parent Firm",
+		 "Customers Name",
+		 "CO No",
+		 "Invoice Quantity",
+		 "Product Code",
+		 "Pack Mtrl Name",
+		 "Pack Mtrl Printing Name",
+		 "Vehicle Number",
+		 "Loading Slip Ref No",
+		 "Invoice Number",
+		 "Added Time",
+		 ROW_NUMBER() OVER(PARTITION BY "CO No"  ORDER BY "Added Time" DESC ) as rnInv
+FROM  "Invoice Breakup")
+/* Main Select Statement */
+SELECT
+		 "COP"."CO NO",
+		 "COP"."Product Code Name",
+		 "COP"."Pack Mtrl Name",
+		 "COP"."Pack Mtrl Printing Name",
+		 "COP"."Pack Size",
+		 "COP"."Parent Firm",
+		 "COP"."Name of the Customer",
+		 "COP"."CO Qntls",
+		 "OTPB"."OTP NO",
+		 "OTPB"."Qntls",
+		 "LSB"."LS Ref No",
+		 "LSB"."Quantity To Load",
+		 "LSB"."Vehicle Number",
+		 "INVB"."Invoice Number",
+		 "INVB"."Invoice Quantity",
+		 "LSB"."Entry Status",
+		 "COP"."Status",
+		 "OTPB"."Status",
+		 "OTPB"."Finance Approval",
+		 "OTPB"."Production Approval",
+		 "OTPB"."PM Incharge Approval",
+		 "OTPB"."Sales  Status for Stock",
+		 "OTPB"."Sales  Status for PM",
+		 "COP"."ID",
+		 "OTPB"."CO Prod ID",
+		 "COP"."Added Time"
+FROM  "CO Prod" AS  "COP"
+LEFT JOIN OTPData AS  "OTPB" ON "COP"."ID"  = "OTPB"."CO Prod ID"
+	 AND	"OTPB"."rn"  = 1 
+LEFT JOIN LSData AS  "LSB" ON "COP"."CO NO"  = "LSB"."CO No"
+	 AND	"OTPB"."OTP NO"  = "LSB"."OTP No"
+	 AND	"LSB"."rnLS"  = 1 
+LEFT JOIN invData AS  "INVB" ON "COP"."CO NO"  = "INVB"."CO No"
+	 AND	"INVB"."Loading Slip Ref No"  = "LSB"."LS Ref No"
+	 AND	"INVB"."rnInv"  = 1  
+ORDER BY "COP"."Added Time" DESC 
+ 

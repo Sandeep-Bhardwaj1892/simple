@@ -1,0 +1,285 @@
+WITH InvoiceDriver AS (/* 1. CREATING A UNIFIED BASE TO PREVENT MISSING RECORDS */
+SELECT
+		 IBS."Invoice Number" AS "Invoice Number",
+		 IBS."Invoice Date" AS "Invoice Date",
+		 IBS."Parent Firm" AS "Parent Firm",
+		 IBS."Customer Name" AS "Customers Name",
+		 
+			/* Aliased to match your downstream code */
+/* Imputation Logic for Categorical Data WITH 'Domestic' Fallback */
+			CASE
+				 WHEN COALESCE(IB."Sale Type Group", IBS."Sale Type Group")  IS NULL THEN 'Domestic'
+				 WHEN UPPER(TRIM(COALESCE(IB."Sale Type Group", IBS."Sale Type Group")))  IN ( ''  , 'UNKNOWN'  ) THEN 'Domestic'
+				 ELSE COALESCE(IB."Sale Type Group", IBS."Sale Type Group")
+			 END AS "Sale Type Group",
+		 COALESCE(IB."Product Type", IBS."Product Type") AS "Product Type",
+		 COALESCE(IB."Variety Name", IBS."Variety Name") AS "Variety Name",
+		 /* Imputation Logic for Amounts and Quantities */ COALESCE(IB."Currency Type", IBS."Currency Type", 'INR') AS "Currency Type",
+		 COALESCE(IB."Inv Exchange Rate", 0) AS "Inv Exchange Rate",
+		 COALESCE(IB."Invoice Quantity", IBS."Total Invoice Quantity", (IBS."Amount" / NULLIF(IBS."Rate Per Qntl", 0)), 0) AS "Invoice Quantity",
+		 COALESCE(IB."Rate Per Qntl", IBS."Rate Per Qntl", 0) AS "Rate Per Qntl",
+		 COALESCE(IB."Amount", IBS."Amount", 0) AS "Amount",
+		 COALESCE(IB."Tax Amount", IBS."Tax Amount", 0) AS "Tax Amount",
+		 /* Line-item specifics (will safely evaluate to NULL if completely missing) */ IB."Product Code" AS "Product Code"
+FROM  "Invoice Balance Sheet" IBS
+LEFT JOIN "Invoice Breakup" IB ON IBS."Invoice Number"  = IB."Invoice Number"  
+WHERE	 DATE(IBS."Invoice Date")  >= '2026-04-01')
+/* Your exact original query begins here, referencing the unified InvoiceDriver */
+SELECT
+		 IB."Invoice Number" AS "Invoice Number",
+		 IB."Invoice Date" AS "Invoice Date",
+		 IB."Parent Firm" AS "Parent Firm",
+		 IB."Customers Name" AS "Customers Name",
+		 IB."Sale Type Group" AS "Sale Type Group",
+		 IB."Product Type" AS "Product Type",
+		 IB."Variety Name" AS "Variety Name",
+		 /* Extracted Raw Variety from Paddy Table */ PT_Daily."Base Variety" AS "Base Variety",
+		 /* 1. Rice Group Extraction */ SUBSTRING_INDEX(SUBSTRING_INDEX(IB."Product Code", '-', 3), '-', -1) AS "Rice Group",
+		 
+			/* 2. Season Extraction */
+			CASE
+				 WHEN LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(IB."Variety Name", ' ', 2), ' ', -1), 1)  = 'R' THEN 'Rabi'
+				 WHEN LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(IB."Variety Name", ' ', 2), ' ', -1), 1)  = 'K' THEN 'Kharif'
+				 ELSE 'Unknown'
+			 END AS "Season",
+		 /* 3. Crop Year Extraction */ CONCAT('20', RIGHT(SUBSTRING_INDEX(SUBSTRING_INDEX(IB."Variety Name", ' ', 2), ' ', -1), 2)) AS "Crop Year",
+		 IB."Currency Type" AS "Currency Type",
+		 IB."Inv Exchange Rate" AS "Inv Exchange Rate",
+		 IB."Invoice Quantity" AS "Invoice Quantity",
+		 /* MT Conversion */ (IB."Invoice Quantity" / 10.0) AS "Invoice Quantity (MT)",
+		 IB."Rate Per Qntl" AS "Rate Per Qntl",
+		 IB."Amount" AS "Amount",
+		 IB."Tax Amount" AS "Tax Amount",
+		 /* Apportioned Tax Calculation */ (IB."Tax Amount" * (IB."Amount" / NULLIF(SUM(IB."Amount") OVER(PARTITION BY IB."Invoice Number"  ), 0))) AS "Apportioned Tax",
+		 
+			CASE
+				 WHEN IB."Currency Type"  <> 'INR' THEN IB."Inv Exchange Rate" * IB."Rate Per Qntl" * IB."Invoice Quantity"
+				 ELSE IB."Rate Per Qntl" * IB."Invoice Quantity"
+			 END AS "Adjusted Amount",
+		 
+			/* Expanded the Apportioned Tax formula directly into the Rate calculation */
+			CASE
+				 WHEN IB."Currency Type"  <> 'INR' THEN ((IB."Inv Exchange Rate" * IB."Rate Per Qntl" * IB."Invoice Quantity") + (IB."Tax Amount" * (IB."Amount" / NULLIF(SUM(IB."Amount") OVER(PARTITION BY IB."Invoice Number"  ), 0)))) / NULLIF(IB."Invoice Quantity", 0)
+				 ELSE ((IB."Rate Per Qntl" * IB."Invoice Quantity") + (IB."Tax Amount" * (IB."Amount" / NULLIF(SUM(IB."Amount") OVER(PARTITION BY IB."Invoice Number"  ), 0)))) / NULLIF(IB."Invoice Quantity", 0)
+			 END AS "Adjusted Rate Per Qntl",
+		 /* Inward Rates */ AP_Daily."Daily Adjusted Rate" AS "Daily Paddy Inward Rate",
+		 AP_Monthly."Monthly Rate" AS "Monthly Paddy Inward Rate",
+		 /* Milling (Outward) Rates */ PT_Daily."Daily Milling Rate" AS "Daily Milling Rate",
+		 PT_Monthly."Monthly Milling Rate" AS "Monthly Milling Rate",
+		 /* Closing Rates */ Closing_Daily."Daily Closing Rate" AS "Daily Closing Rate",
+		 Closing_Monthly."Monthly Closing Rate" AS "Monthly Closing Rate",
+		 /* Inward Quantities */ AP_Daily."Daily Inward Qnty" AS "Daily Inward Qnty",
+		 AP_Monthly."Monthly Inward Qnty" AS "Monthly Inward Qnty",
+		 /* Milling (Outward) Quantities */ PT_Daily."Daily Milling Qnty" AS "Daily Milling Qnty",
+		 PT_Monthly."Monthly Milling Qnty" AS "Monthly Milling Qnty",
+		 /* Closing Quantities */ Closing_Daily."Daily Closing Qnty" AS "Daily Closing Qnty",
+		 Closing_Monthly."Monthly Closing Qnty" AS "Monthly Closing Qnty",
+		 /* Customer WA Rates */ Cust_Daily."Customer Daily WA Rate" AS "Customer Daily WA Rate",
+		 Cust_Monthly."Customer Monthly WA Rate" AS "Customer Monthly WA Rate",
+		 /* Customer Sale Quantities */ SUM(IB."Invoice Quantity") OVER(PARTITION BY IB."Customers Name" , IB."Invoice Date"  ) AS "Customer Daily Sale Qnty",
+		 SUM(IB."Invoice Quantity") OVER(PARTITION BY IB."Customers Name" , YEAR(IB."Invoice Date") , MONTH(IB."Invoice Date")  ) AS "Customer Monthly Sale Qnty",
+		 /* Variety WA Rates */ Var_Daily."Variety Daily WA Rate" AS "Variety Daily WA Rate",
+		 Var_Monthly."Variety Monthly WA Rate" AS "Variety Monthly WA Rate",
+		 /* Variety Monthly Sale Quantity */ SUM(IB."Invoice Quantity") OVER(PARTITION BY IB."Variety Name" , YEAR(IB."Invoice Date") , MONTH(IB."Invoice Date")  ) AS "Variety Monthly Sale Qnty"
+FROM  InvoiceDriver AS  IB /* ==========================================
+   1. INWARD: DAILY SUBQUERY 
+========================================== */
+LEFT JOIN(	SELECT
+			 DATE("Added Time") AS "Pay_Date",
+			 TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety Name")) - LENGTH(REPLACE(TRIM("Variety Name"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety Name"), ' ', LENGTH(TRIM("Variety Name")) -LENGTH(REPLACE(TRIM("Variety Name"), ' ', '')))
+					 ELSE TRIM("Variety Name")
+				 END) AS "Pay_Variety",
+			 MAX("Daily Adjusted Rate") AS "Daily Adjusted Rate",
+			 SUM("Adjusted Qnty") AS "Daily Inward Qnty"
+	FROM  "All Paddy Payment" 
+	GROUP BY DATE("Added Time"),
+		  TRIM(CASE
+				 WHEN LENGTH(TRIM("Variety Name")) - LENGTH(REPLACE(TRIM("Variety Name"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety Name"), ' ', LENGTH(TRIM("Variety Name")) -LENGTH(REPLACE(TRIM("Variety Name"), ' ', '')))
+				 ELSE TRIM("Variety Name")
+			 END) 
+) AS  AP_Daily ON DATE(IB."Invoice Date")  = AP_Daily."Pay_Date"
+	 AND	TRIM(SUBSTRING_INDEX(CONCAT('P', SUBSTRING(IB."Variety Name", LOCATE('-', IB."Variety Name"))), ' ', 2))  = AP_Daily."Pay_Variety" /* ==========================================
+   2. INWARD: MONTHLY SUBQUERY 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 YEAR("Added Time") AS "Pay_Year",
+			 MONTH("Added Time") AS "Pay_Month",
+			 TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety Name")) - LENGTH(REPLACE(TRIM("Variety Name"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety Name"), ' ', LENGTH(TRIM("Variety Name")) -LENGTH(REPLACE(TRIM("Variety Name"), ' ', '')))
+					 ELSE TRIM("Variety Name")
+				 END) AS "Pay_Variety",
+			 MAX("Monthly Adjusted Rate") AS "Monthly Rate",
+			 SUM("Adjusted Qnty") AS "Monthly Inward Qnty"
+	FROM  "All Paddy Payment" 
+	GROUP BY YEAR("Added Time"),
+		 MONTH("Added Time"),
+		  TRIM(CASE
+				 WHEN LENGTH(TRIM("Variety Name")) - LENGTH(REPLACE(TRIM("Variety Name"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety Name"), ' ', LENGTH(TRIM("Variety Name")) -LENGTH(REPLACE(TRIM("Variety Name"), ' ', '')))
+				 ELSE TRIM("Variety Name")
+			 END) 
+) AS  AP_Monthly ON YEAR(IB."Invoice Date")  = AP_Monthly."Pay_Year"
+	 AND	MONTH(IB."Invoice Date")  = AP_Monthly."Pay_Month"
+	 AND	TRIM(SUBSTRING_INDEX(CONCAT('P', SUBSTRING(IB."Variety Name", LOCATE('-', IB."Variety Name"))), ' ', 2))  = AP_Monthly."Pay_Variety" /* ==========================================
+   3. MILLING (OUTWARD): LATEST VALID DATE (TEMPORAL JOIN) 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 MAX(DATE("Transaction Date")) AS "Start_Date",
+			 COALESCE(LEAD(MAX(DATE("Transaction Date"))) OVER(PARTITION BY TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END)  ORDER BY MAX(DATE("Transaction Date")) ), '2099-12-31') AS "End_Date",
+			 TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END) AS "Outward_Variety",
+			 MAX("Variety") AS "Base Variety",
+			 SUM("Outward Qnty" * "Outward Rate") / SUM("Outward Qnty") AS "Daily Milling Rate",
+			 SUM("Outward Qnty") AS "Daily Milling Qnty"
+	FROM  "Paddy Transactions Unconsolidated" 
+	WHERE	 "Transaction Type"  = 'Outward'
+	GROUP BY DATE("Transaction Date"),
+		  TRIM(CASE
+				 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+				 ELSE TRIM("Variety")
+			 END) 
+) AS  PT_Daily ON DATE(IB."Invoice Date")  >= PT_Daily."Start_Date"
+	 AND	DATE(IB."Invoice Date")  < PT_Daily."End_Date"
+	 AND	TRIM(SUBSTRING_INDEX(CONCAT('P', SUBSTRING(IB."Variety Name", LOCATE('-', IB."Variety Name"))), ' ', 2))  = PT_Daily."Outward_Variety" /* ==========================================
+   4. MILLING (OUTWARD): MONTHLY SUBQUERY 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 YEAR("Transaction Date") AS "Outward_Year",
+			 MONTH("Transaction Date") AS "Outward_Month",
+			 TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END) AS "Outward_Variety",
+			 SUM("Outward Qnty" * "Outward Rate") / SUM("Outward Qnty") AS "Monthly Milling Rate",
+			 SUM("Outward Qnty") AS "Monthly Milling Qnty"
+	FROM  "Paddy Transactions Unconsolidated" 
+	WHERE	 "Transaction Type"  = 'Outward'
+	GROUP BY YEAR("Transaction Date"),
+		 MONTH("Transaction Date"),
+		  TRIM(CASE
+				 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+				 ELSE TRIM("Variety")
+			 END) 
+) AS  PT_Monthly ON YEAR(IB."Invoice Date")  = PT_Monthly."Outward_Year"
+	 AND	MONTH(IB."Invoice Date")  = PT_Monthly."Outward_Month"
+	 AND	TRIM(SUBSTRING_INDEX(CONCAT('P', SUBSTRING(IB."Variety Name", LOCATE('-', IB."Variety Name"))), ' ', 2))  = PT_Monthly."Outward_Variety" /* ==========================================
+   5. CUSTOMER WA RATE: DAILY 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 DATE("Invoice Date") AS "Cust_Daily_Date",
+			 "Customers Name" AS "Cust_Daily_Name",
+			 SUM((
+				CASE
+					 WHEN "Currency Type"  <> 'INR' THEN "Inv Exchange Rate" * "Rate Per Qntl"
+					 ELSE "Rate Per Qntl"
+				 END) * "Invoice Quantity") / SUM("Invoice Quantity") AS "Customer Daily WA Rate"
+	FROM  "Invoice Breakup" 
+	GROUP BY DATE("Invoice Date"),
+		  "Customers Name" 
+) AS  Cust_Daily ON DATE(IB."Invoice Date")  = Cust_Daily."Cust_Daily_Date"
+	 AND	IB."Customers Name"  = Cust_Daily."Cust_Daily_Name" /* ==========================================
+   6. CUSTOMER WA RATE: MONTHLY 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 YEAR("Invoice Date") AS "Cust_Monthly_Year",
+			 MONTH("Invoice Date") AS "Cust_Monthly_Month",
+			 "Customers Name" AS "Cust_Monthly_Name",
+			 SUM((
+				CASE
+					 WHEN "Currency Type"  <> 'INR' THEN "Inv Exchange Rate" * "Rate Per Qntl"
+					 ELSE "Rate Per Qntl"
+				 END) * "Invoice Quantity") / SUM("Invoice Quantity") AS "Customer Monthly WA Rate"
+	FROM  "Invoice Breakup" 
+	GROUP BY YEAR("Invoice Date"),
+		 MONTH("Invoice Date"),
+		  "Customers Name" 
+) AS  Cust_Monthly ON YEAR(IB."Invoice Date")  = Cust_Monthly."Cust_Monthly_Year"
+	 AND	MONTH(IB."Invoice Date")  = Cust_Monthly."Cust_Monthly_Month"
+	 AND	IB."Customers Name"  = Cust_Monthly."Cust_Monthly_Name" /* ==========================================
+   7. VARIETY WA RATE: DAILY 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 DATE("Invoice Date") AS "Var_Daily_Date",
+			 "Variety Name" AS "Var_Daily_Name",
+			 SUM((
+				CASE
+					 WHEN "Currency Type"  <> 'INR' THEN "Inv Exchange Rate" * "Rate Per Qntl"
+					 ELSE "Rate Per Qntl"
+				 END) * "Invoice Quantity") / SUM("Invoice Quantity") AS "Variety Daily WA Rate"
+	FROM  "Invoice Breakup" 
+	GROUP BY DATE("Invoice Date"),
+		  "Variety Name" 
+) AS  Var_Daily ON DATE(IB."Invoice Date")  = Var_Daily."Var_Daily_Date"
+	 AND	IB."Variety Name"  = Var_Daily."Var_Daily_Name" /* ==========================================
+   8. VARIETY WA RATE: MONTHLY 
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 YEAR("Invoice Date") AS "Var_Monthly_Year",
+			 MONTH("Invoice Date") AS "Var_Monthly_Month",
+			 "Variety Name" AS "Var_Monthly_Name",
+			 SUM((
+				CASE
+					 WHEN "Currency Type"  <> 'INR' THEN "Inv Exchange Rate" * "Rate Per Qntl"
+					 ELSE "Rate Per Qntl"
+				 END) * "Invoice Quantity") / SUM("Invoice Quantity") AS "Variety Monthly WA Rate"
+	FROM  "Invoice Breakup" 
+	GROUP BY YEAR("Invoice Date"),
+		 MONTH("Invoice Date"),
+		  "Variety Name" 
+) AS  Var_Monthly ON YEAR(IB."Invoice Date")  = Var_Monthly."Var_Monthly_Year"
+	 AND	MONTH(IB."Invoice Date")  = Var_Monthly."Var_Monthly_Month"
+	 AND	IB."Variety Name"  = Var_Monthly."Var_Monthly_Name" /* ==========================================
+   9. CLOSING: DAILY (SINGLE-LEVEL LOCF)
+========================================== */
+ 
+LEFT JOIN(	SELECT
+			 DATE("Transaction Date") AS "Start_Date",
+			 COALESCE(LEAD(DATE("Transaction Date")) OVER(PARTITION BY TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END)  ORDER BY "Transaction Date" ), CAST('2099-12-31' AS DATE)) AS "End_Date",
+			 TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END) AS "Closing_Variety",
+			 "Closing Qnty" AS "Daily Closing Qnty",
+			 "Closing Rate" AS "Daily Closing Rate"
+	FROM  "Paddy Transactions Unconsolidated" 
+) AS  Closing_Daily ON DATE(IB."Invoice Date")  >= Closing_Daily."Start_Date"
+	 AND	DATE(IB."Invoice Date")  < Closing_Daily."End_Date"
+	 AND	TRIM(SUBSTRING_INDEX(CONCAT('P', SUBSTRING(IB."Variety Name", LOCATE('-', IB."Variety Name"))), ' ', 2))  = Closing_Daily."Closing_Variety" /* ==========================================
+   10. CLOSING: MONTHLY (SINGLE-LEVEL DISTINCT)
+========================================== */
+ 
+LEFT JOIN(	SELECT DISTINCT
+			 YEAR("Transaction Date") AS "Closing_Year",
+			 MONTH("Transaction Date") AS "Closing_Month",
+			 TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END) AS "Closing_Variety",
+			 LAST_VALUE("Closing Qnty") OVER(PARTITION BY YEAR("Transaction Date") , MONTH("Transaction Date") , TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END)  ORDER BY "Transaction Date" ASC  ROWS  BETWEEN  UNBOUNDED  PRECEDING  AND  UNBOUNDED  FOLLOWING ) AS "Monthly Closing Qnty",
+			 LAST_VALUE("Closing Rate") OVER(PARTITION BY YEAR("Transaction Date") , MONTH("Transaction Date") , TRIM(CASE
+					 WHEN LENGTH(TRIM("Variety")) - LENGTH(REPLACE(TRIM("Variety"), ' ', ''))  > 0 THEN SUBSTRING_INDEX(TRIM("Variety"), ' ', LENGTH(TRIM("Variety")) -LENGTH(REPLACE(TRIM("Variety"), ' ', '')))
+					 ELSE TRIM("Variety")
+				 END)  ORDER BY "Transaction Date" ASC  ROWS  BETWEEN  UNBOUNDED  PRECEDING  AND  UNBOUNDED  FOLLOWING ) AS "Monthly Closing Rate"
+	FROM  "Paddy Transactions Unconsolidated" 
+) AS  Closing_Monthly ON YEAR(IB."Invoice Date")  = Closing_Monthly."Closing_Year"
+	 AND	MONTH(IB."Invoice Date")  = Closing_Monthly."Closing_Month"
+	 AND	TRIM(SUBSTRING_INDEX(CONCAT('P', SUBSTRING(IB."Variety Name", LOCATE('-', IB."Variety Name"))), ' ', 2))  = Closing_Monthly."Closing_Variety"  
+ 

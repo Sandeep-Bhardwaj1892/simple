@@ -1,0 +1,48 @@
+/* 1. Summarize the OTP data first so every CO Prod ID only has ONE row */
+WITH OTP_Summary AS (
+    SELECT 
+        "OB"."CO Prod ID",
+        MAX("OB"."OTP NO") AS "OTP Ref No",       -- Grabs the OTP Number
+        MAX("OB"."Status") AS "OTP Status",       -- Adds the OTP Status
+        SUM("OB"."Qntls") AS "Total OTP Qty",     -- Added the missing comma here
+        MAX("OTPFrom"."Vehicle Number") AS "Vehicle Number" -- Fixed quotation marks
+        
+    FROM "OTP Breakup" AS "OB"
+    
+    -- Join using the raw column name "OTP NO" from the OB table
+    LEFT JOIN "OTP Form" AS "OTPFrom" 
+        ON "OB"."OTP NO" = "OTPFrom"."OTP Ref No"
+        
+    -- Explicitly tell SQL to check the Status in the OTP Breakup table
+    WHERE "OB"."Status" NOT IN ('Rejct', 'Cancelled', 'Cancel') 
+    GROUP BY "OB"."CO Prod ID"
+)
+
+/* 2. Main Query */
+SELECT
+    "COP"."CO NO" AS "CO No",
+    "COP"."Product Code Name" AS "Product Code Name",
+    "COP"."Pack Mtrl Name" AS "Pack Mtrl Name",
+    "COP"."Pack Mtrl Printing Name" AS "Pack Mtrl Printing Name",
+    "COP"."Pack Size" AS "Pack Size",
+    "COP"."Parent Firm" AS "Parent Firm",
+    "COP"."Name of the Customer" AS "Customer Name",
+    "COP"."CO Qntls" AS "CO Qty",
+    
+    /* Pull in your grouped OTP Data here */
+    IFNULL("OTPB"."OTP Ref No", '-') AS "OTP Ref No",
+    IFNULL("OTPB"."Total OTP Qty", 0) AS "OTP Qty",
+    IFNULL("OTPB"."OTP Status", '-') AS "OTP Status",      
+    IFNULL("OTPB"."Vehicle Number", '-') AS "Vehicle Number",
+    
+    "COP"."Status" AS "Status",
+    "COP"."ID",
+    "COP"."Added Time" AS "Added Time"
+    
+FROM "CO Prod" AS "COP"
+
+/* The LEFT JOIN guarantees ALL CO records show, even if there is no OTP yet */
+LEFT JOIN OTP_Summary AS "OTPB" 
+    ON "COP"."ID" = "OTPB"."CO Prod ID"
+    
+ORDER BY "COP"."Added Time" DESC

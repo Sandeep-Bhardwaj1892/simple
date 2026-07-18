@@ -1,0 +1,38 @@
+/* Combine both CTEs with a single WITH clause */
+WITH invData AS (SELECT
+		 "Parent Firm",
+		 "Customers Name",
+		 "CO No",
+		 "Invoice Quantity",
+		 "Product Code",
+		 "Pack Mtrl Name",
+		 "Pack Mtrl Printing Name",
+		 "Vehicle Number",
+		 "Loading Slip Ref No",
+		 "Invoice Number",
+		 "Added Time",
+		 SUM("Invoice Quantity") OVER(PARTITION BY "CO No" , "Product Code" , "Pack Mtrl Name" , "Pack Mtrl Printing Name"  ) AS "Total Invoice Qty",
+		 ROW_NUMBER() OVER(PARTITION BY "CO No" , "Product Code" , "Pack Mtrl Name" , "Pack Mtrl Printing Name"  ORDER BY "Added Time" DESC ) AS rnInv
+FROM  "Invoice Breakup")
+/* Main Select Statement */
+SELECT
+		 "COP"."CO NO",
+		 "COP"."Product Code Name",
+		 "COP"."Pack Mtrl Name",
+		 "COP"."Pack Mtrl Printing Name",
+		 "COP"."Pack Size",
+		 "COP"."Parent Firm",
+		 "COP"."Name of the Customer",
+		 "COP"."CO Qntls",
+		 IFNULL("INVB"."Invoice Number", 'Pending') AS "Invoice Number",
+		 IFNULL("INVB"."Total Invoice Qty", 0) AS "Invoice Qty",
+		 "COP"."Status",
+		 "COP"."ID",
+		 "COP"."Added Time"
+FROM  "CO Prod" AS  "COP"
+LEFT JOIN invData AS  "INVB" ON "COP"."CO NO"  = "INVB"."CO No"
+	 AND	"COP"."Product Code Name"  = "INVB"."Product Code"
+	 AND	"COP"."Pack Mtrl Name"  = "INVB"."Pack Mtrl Name"
+	 AND	"COP"."Pack Mtrl Printing Name"  = "INVB"."Pack Mtrl Printing Name"
+	 AND	"INVB".rnInv  = 1  
+ORDER BY "COP"."Added Time" DESC 
